@@ -1,0 +1,56 @@
+# TestEZ standard library for selene (by selene's author).
+# Source: https://gist.github.com/Kampfkarren/f2dddc2ebfa4e0662e44b8702e519c2d
+# Wired via `std = "roblox+testez"` in selene.toml. Covers the globals TestEZ
+# injects into spec files (describe/it/expect/...).
+globals:
+  FIXME:
+    args:
+      - required: false
+        type: string
+  FOCUS:
+    args: []
+  SKIP:
+    args: []
+  afterAll:
+    args:
+      - type: function
+  afterEach:
+    args:
+      - type: function
+  beforeAll:
+    args:
+      - type: function
+  beforeEach:
+    args:
+      - type: function
+  describe:
+    args:
+      - type: string
+      - type: function
+  describeFOCUS:
+    args:
+      - type: string
+      - type: function
+  describeSKIP:
+    args:
+      - type: string
+      - type: function
+  expect:
+    args:
+      - type: any
+  it:
+    args:
+      - type: string
+      - type: function
+  itFIXME:
+    args:
+      - type: string
+      - type: function
+  itFOCUS:
+    args:
+      - type: string
+      - type: function
+  itSKIP:
+    args:
+      - type: string
+      - type: function

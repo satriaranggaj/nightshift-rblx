@@ -1,6 +1,9 @@
 # NIGHTSHIFT lint: Selene with Roblox base std + Luau-friendly baseline.
 # Start strict-light; tighten per-phase, never loosen silently.
-std = "roblox"
+# Roblox base std layered with the TestEZ spec globals (testez.yml).
+std = "roblox+testez"
+# Never lint vendored Wally packages; only first-party code.
+exclude = ["Packages/**"]
 
 [lints]
 # Correctness-first baseline

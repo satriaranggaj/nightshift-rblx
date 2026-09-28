@@ -1,0 +1,10 @@
+[package]
+name = "satriaranggaj/nightshift"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+license = "UNLICENSED"
+description = "NIGHTSHIFT open-world street-racing RPG (private, unlicensed)"
+
+[dependencies]
+TestEZ = "roblox/testez@0.4.0"
