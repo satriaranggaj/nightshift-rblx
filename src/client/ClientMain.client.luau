@@ -1,35 +1,55 @@
 --!strict
+--!strict
 -- NIGHTSHIFT client entry point.
--- Phase 1 wires the input stack only (keyboard + stub adapters behind the
--- InputController). No vehicle, camera, or gameplay systems yet.
+-- Phase 2 wires input + the arcade VehicleController onto the dev rig vehicle.
+-- No camera, gameplay, garage, or economy systems yet.
 -- Client never grants currency, ownership, rewards, or progression (see AGENTS.md).
 
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local inputFolder = script.Parent.input
+local controllersFolder = script.Parent.controllers
 
 local InputController = require(inputFolder.InputController)
 local KeyboardInput = require(inputFolder.KeyboardInput)
 local TouchInput = require(inputFolder.TouchInput)
 local GamepadInput = require(inputFolder.GamepadInput)
 local InputDebug = require(inputFolder.InputDebug)
+local VehicleController = require(controllersFolder.VehicleController)
+local ChassisConfig = require(ReplicatedStorage.Shared.config.ChassisConfig)
 
--- TEMPORARY Phase 1: normalized-input readout until a debug UI exists.
+-- TEMPORARY Phase 1+2: normalized-input readout until a debug UI exists.
 local DEBUG_INPUT = true
 
 local ClientMain = {}
 
 function ClientMain.start(): ()
-	local controller = InputController.new()
+	local input = InputController.new()
 	-- Priority order: keyboard, gamepad, touch (first non-neutral wins).
-	controller:register(KeyboardInput)
-	controller:register(GamepadInput)
-	controller:register(TouchInput)
-	controller:startAll()
+	input:register(KeyboardInput)
+	input:register(GamepadInput)
+	input:register(TouchInput)
+	input:startAll()
 
 	if DEBUG_INPUT then
-		InputDebug.start(controller)
+		InputDebug.start(input)
 	end
 
-	warn("[NIGHTSHIFT] Client input stack ready (Phase 1).")
+	-- DEV-ONLY Phase 2: attach to the rig vehicle (server-built test blockout).
+	local rig = Workspace:WaitForChild("NIGHTSHIFT_Rig")
+	local vehicle = rig:WaitForChild("TestBlockout")
+	if vehicle:IsA("Model") then
+		local driver = VehicleController.new(input, ChassisConfig.TEST_BLOCKOUT)
+		local ok, message = driver:attach(vehicle)
+		if ok then
+			warn("[NIGHTSHIFT] VehicleController attached (Phase 2).")
+		else
+			warn("[NIGHTSHIFT] VehicleController attach failed: " .. message)
+		end
+	else
+		warn("[NIGHTSHIFT] Rig vehicle missing; input-only mode.")
+	end
 end
 
 ClientMain.start()

@@ -11,7 +11,7 @@ Do not jump ahead; one milestone per task.
 - Acceptance: `rokit install` → `rojo build` succeeds; stylua/selene clean; CodeGraph indexes Luau; Studio syncs empty base.
 - Studio: connect Rojo plugin, sync, playtest empty base (no errors in output).
 
-## Phase 1 — Vehicle input abstraction
+## Phase 1 — Vehicle input abstraction ✅
 
 - Goal: all platforms produce `VehicleInput` (Types.luau).
 - Scope: input module + keyboard + stub touch/gamepad adapters, clamping/validation unit tests.
@@ -20,7 +20,7 @@ Do not jump ahead; one milestone per task.
 - Acceptance: same logical gesture → identical `VehicleInput` on all adapters; bounds enforced; tests green.
 - Studio: PC keyboard drives a debug readout; mobile emulator shows touch stub values.
 
-## Phase 2 — Basic arcade chassis
+## Phase 2 — Basic arcade chassis ✅
 
 - Goal: one test block-car moves from `VehicleInput` (PC-first, touch-compatible).
 - Scope: single physics impl (accel/brake/grip baseline), spawn-on-pad harness.

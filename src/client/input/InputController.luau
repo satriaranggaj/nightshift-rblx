@@ -4,6 +4,11 @@
 -- rule: first non-neutral adapter in registration order wins; otherwise
 -- neutral. Registration order is set once by the caller (ClientMain), so
 -- adapter priority is explicit and reviewable in one place.
+--
+-- FUTURE (pre-multi-adapter): replace first-non-neutral with an explicit
+-- active/last-meaningful-source policy plus per-adapter deadzones before
+-- enabling multiple REAL adapters, or stick drift / stale state can hijack
+-- control. Do not grow arbitration here in the meantime.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 

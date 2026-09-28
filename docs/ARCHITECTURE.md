@@ -55,8 +55,14 @@ Controller (gamepad) ─┘       (normalized)      (arcade)               (sing
 - `VehicleInput`: `{ throttle 0..1, brake 0..1, steer -1..1, drift bool, nitro bool }`.
   Platform layers adapt (auto-throttle, smoothing, speed-sensitive steer);
   physics never branches per platform.
-- Phase 1 builds the input abstraction against this contract; later phases add
-  chassis → steering → drift → nitro → camera without changing the contract.
+- Phase 2 realized the pipeline with concrete modules (no contract change):
+  `client/input/*` → `shared/vehicle/VehicleInput` (sanitize) →
+  `client/controllers/VehicleController` (lifecycle + force application) →
+  `shared/vehicle/ArcadeChassis.step` (pure policy: forward/brake/reverse/coast
+  targets, smoothed steer, standstill-scaled yaw) + `shared/config/ChassisConfig`
+  (data only; `TEST_BLOCKOUT` rig values) → single-assembly VectorForce /
+  AngularVelocity / AlignOrientation constraints. Driver's client simulates via
+  NetworkOwnership; server re-simulation/plausibility is a Phase 11 concern.
 
 ## Why this structure (Roblox fit)
 
