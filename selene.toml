@@ -1,0 +1,16 @@
+# NIGHTSHIFT lint: Selene with Roblox base std + Luau-friendly baseline.
+# Start strict-light; tighten per-phase, never loosen silently.
+std = "roblox"
+
+[lints]
+# Correctness-first baseline
+incorrect_standard_library_use = "deny"
+undefined_variable = "deny"
+unused_variable = "warn"
+unused_function = "warn"
+shadowing = "warn"
+empty_if = "warn"
+empty_loop = "warn"
+unreachable_code = "deny"
+divide_by_zero = "warn"
+global_usage = "warn"

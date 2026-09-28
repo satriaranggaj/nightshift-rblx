@@ -1,0 +1,5 @@
+[tools]
+# Pinned 2026-09-28. Update via `rokit update`; record reason in commit message.
+rojo = "rojo-rbx/rojo@7.7.0"
+stylua = "JohnnyMorganz/stylua@2.5.2"
+selene = "Kampfkarren/selene@0.31.0"

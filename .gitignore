@@ -1,0 +1,30 @@
+# Build output
+build/
+*.rbxl
+*.rbxlx
+*.rbxm
+
+# Rojo
+.rojo/
+
+# Rokit toolchain downloads
+.toolchain/
+
+# CodeGraph index cache (index is regenerable; keep config, ignore cache)
+.codegraph/cache/
+.codegraph/*.log
+
+# Lune
+.lune/
+
+# Wally
+Packages/
+wally.lock
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
