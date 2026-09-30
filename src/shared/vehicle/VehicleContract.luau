@@ -6,9 +6,13 @@
 --
 -- Why an explicit root part instead of Model.PrimaryPart: PrimaryPart does not
 -- reliably replicate to clients for server-constructed models, so attachment
--- must never depend on it. The root part has a stable name; readiness is
--- signalled explicitly via an attribute set AFTER construction + parenting.
--- A vehicle is ready only when the complete structural contract exists.
+-- must never depend on it. The root part has a stable name; replication
+-- readiness is signalled explicitly via an attribute set AFTER construction +
+-- parenting. A vehicle is attachable only when BOTH hold:
+--   structural completeness (isComplete: the named root BasePart exists), AND
+--   replication readiness (READY_ATTRIBUTE == true: the full structure arrived).
+-- The attribute is the replication signal; isComplete is the structure check.
+-- Client wiring waits for both, in either arrival order.
 
 local VehicleContract = {}
 
@@ -19,9 +23,10 @@ VehicleContract.ROOT_PART_NAME = "Chassis"
 -- this (event-driven, never a sleep) before resolving the root part.
 VehicleContract.READY_ATTRIBUTE = "NIGHTSHIFT_Ready"
 
--- Deterministic readiness check. Accepts real Instances or mock tables
--- exposing FindFirstChild(string); rejects everything else with a reason.
-function VehicleContract.isReady(model: any): (boolean, string)
+-- Deterministic structural-completeness check (NOT the replication signal).
+-- Accepts real Instances or mock tables exposing FindFirstChild(string);
+-- rejects everything else with a reason.
+function VehicleContract.isComplete(model: any): (boolean, string)
 	if typeof(model) ~= "table" and typeof(model) ~= "Instance" then
 		return false, "model must be a Model"
 	end
@@ -38,6 +43,15 @@ function VehicleContract.isReady(model: any): (boolean, string)
 		return false, "root part '" .. VehicleContract.ROOT_PART_NAME .. "' must be a BasePart"
 	end
 	return true, "ok"
+end
+
+-- Single root-resolution path: the named stable root, or nil. Never PrimaryPart.
+function VehicleContract.resolveRoot(model: any): BasePart?
+	local complete, _ = VehicleContract.isComplete(model)
+	if not complete then
+		return nil
+	end
+	return (model :: any):FindFirstChild(VehicleContract.ROOT_PART_NAME) :: BasePart
 end
 
 return VehicleContract

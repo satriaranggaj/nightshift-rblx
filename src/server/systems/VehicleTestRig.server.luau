@@ -77,7 +77,8 @@ local function buildVehicle(parent: Instance): Model
 	model.Parent = parent
 	-- Readiness invariant (LAST step): clients attach only after this attribute
 	-- replicates, which guarantees the complete structure arrived first.
-	-- Never rely on PrimaryPart replication; see VehicleContract.
+	-- PrimaryPart is set for Studio tooling only and never read at runtime;
+	-- root resolution always goes through VehicleContract (see above).
 	model:SetAttribute(VehicleContract.READY_ATTRIBUTE, true)
 	return model
 end
@@ -99,10 +100,10 @@ tarmac.Parent = rig
 local vehicle = buildVehicle(rig)
 
 local function handOwnership(player: Player): ()
-	local chassis = vehicle.PrimaryPart
-	if chassis ~= nil and chassis:IsA("BasePart") then
+	local chassis = VehicleContract.resolveRoot(vehicle)
+	if chassis ~= nil then
 		local ok, _ = pcall(function()
-			(chassis :: BasePart):SetNetworkOwner(player)
+			chassis:SetNetworkOwner(player)
 		end)
 		if not ok then
 			warn("[NIGHTSHIFT Rig] Could not assign network ownership.")
@@ -118,8 +119,8 @@ Players.PlayerAdded:Connect(handOwnership)
 -- Safe reset: recover escaped vehicles instead of leaving them under the world.
 local RunService = game:GetService("RunService")
 RunService.Heartbeat:Connect(function()
-	local chassis = vehicle.PrimaryPart
-	if chassis == nil or not chassis:IsA("BasePart") then
+	local chassis = VehicleContract.resolveRoot(vehicle)
+	if chassis == nil then
 		return
 	end
 	if chassis.Position.Y < RECOVERY_Y then

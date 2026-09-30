@@ -24,6 +24,42 @@ local DEBUG_INPUT = true
 
 local ClientMain = {}
 
+-- Event-driven vehicle readiness (no sleeps, no timeouts): returns once the
+-- Model exists locally AND the replication attribute is true AND the named
+-- root part exists AND structural validation passes — regardless of whether
+-- the attribute or the root arrives first. Spurious wakeups just re-check.
+function ClientMain.waitForVehicleReady(vehicle: Instance): ()
+	local signal = Instance.new("BindableEvent")
+	local attrConn: RBXScriptConnection? = nil
+	local childConn: RBXScriptConnection? = nil
+
+	local function poke(): ()
+		signal:Fire()
+	end
+	attrConn = vehicle:GetAttributeChangedSignal(VehicleContract.READY_ATTRIBUTE):Connect(poke)
+	childConn = vehicle.ChildAdded:Connect(poke)
+
+	while true do
+		if vehicle:GetAttribute(VehicleContract.READY_ATTRIBUTE) == true then
+			if vehicle:FindFirstChild(VehicleContract.ROOT_PART_NAME) ~= nil then
+				local complete, _ = VehicleContract.isComplete(vehicle)
+				if complete then
+					break
+				end
+			end
+		end
+		signal.Event:Wait()
+	end
+
+	if attrConn ~= nil then
+		attrConn:Disconnect()
+	end
+	if childConn ~= nil then
+		childConn:Disconnect()
+	end
+	signal:Destroy()
+end
+
 function ClientMain.start(): ()
 	local input = InputController.new()
 	-- Priority order: keyboard, gamepad, touch (first non-neutral wins).
@@ -37,15 +73,10 @@ function ClientMain.start(): ()
 	end
 
 	-- DEV-ONLY Phase 2: attach to the rig vehicle (server-built test blockout).
-	-- Readiness invariant (event-driven, never a sleep): the rig sets
-	-- NIGHTSHIFT_Ready only after the structural contract is complete, so a
-	-- freshly replicated Model shell can never be mistaken for a ready vehicle.
+	-- A freshly replicated Model shell is never mistaken for a ready vehicle.
 	local rig = Workspace:WaitForChild("NIGHTSHIFT_Rig")
 	local vehicle = rig:WaitForChild("TestBlockout")
-	if vehicle:GetAttribute(VehicleContract.READY_ATTRIBUTE) ~= true then
-		vehicle:GetAttributeChangedSignal(VehicleContract.READY_ATTRIBUTE):Wait()
-	end
-	vehicle:WaitForChild(VehicleContract.ROOT_PART_NAME)
+	ClientMain.waitForVehicleReady(vehicle)
 	if vehicle:IsA("Model") then
 		local driver = VehicleController.new(input, ChassisConfig.TEST_BLOCKOUT)
 		local ok, message = driver:attach(vehicle)
