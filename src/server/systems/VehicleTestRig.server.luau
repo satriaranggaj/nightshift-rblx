@@ -11,6 +11,9 @@
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local VehicleContract = require(ReplicatedStorage.Shared.vehicle.VehicleContract)
 
 local SPAWN_CFRAME = CFrame.new(0, 4, 0)
 local RECOVERY_Y = -50
@@ -72,6 +75,10 @@ local function buildVehicle(parent: Instance): Model
 
 	model.PrimaryPart = chassis
 	model.Parent = parent
+	-- Readiness invariant (LAST step): clients attach only after this attribute
+	-- replicates, which guarantees the complete structure arrived first.
+	-- Never rely on PrimaryPart replication; see VehicleContract.
+	model:SetAttribute(VehicleContract.READY_ATTRIBUTE, true)
 	return model
 end
 

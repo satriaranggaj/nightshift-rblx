@@ -8,9 +8,14 @@
 -- buttons, or sticks). Produces MOTION via ArcadeChassis math (never invents
 -- physics). No economy, persistence, or race logic.
 --
--- Model contract (minimal): a Model whose PrimaryPart is a single rigid BasePart
--- (whole assembly welded to it). Optional `Wheels` folder is visual-only in
--- Phase 2 (welded blockout; spinning wheels need hinge constraints, deferred).
+-- Model contract (minimal, explicit): a Model containing a single rigid root
+-- BasePart named `Chassis` (whole assembly welded to it; see VehicleContract).
+-- The builder signals structural completeness via the NIGHTSHIFT_Ready
+-- attribute; attach() still re-validates and fails safely for malformed
+-- models. PrimaryPart is deliberately NOT used: it does not reliably
+-- replicate to clients for server-constructed models.
+-- Optional `Wheels` folder is visual-only in Phase 2 (welded blockout;
+-- spinning wheels need hinge constraints, deferred).
 -- The controller creates and owns its DriveAttachment/VectorForce/
 -- AngularVelocity/AlignOrientation on attach and destroys them on detach, so no
 -- per-car script copies ever exist.
@@ -20,6 +25,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ArcadeChassis = require(ReplicatedStorage.Shared.vehicle.ArcadeChassis)
+local VehicleContract = require(ReplicatedStorage.Shared.vehicle.VehicleContract)
 
 export type InputSource = {
 	getInput: (any) -> ArcadeChassis.VehicleInput,
@@ -68,9 +74,13 @@ function VehicleController.attach(self: VehicleController, model: Model): (boole
 	if self._model ~= nil then
 		return false, "already attached"
 	end
-	local primary = model.PrimaryPart
+	local ready, reason = VehicleContract.isReady(model)
+	if not ready then
+		return false, reason
+	end
+	local primary = model:FindFirstChild(VehicleContract.ROOT_PART_NAME)
 	if primary == nil or not primary:IsA("BasePart") then
-		return false, "model needs a BasePart PrimaryPart"
+		return false, "contract re-check: root vanished"
 	end
 
 	local attachment = Instance.new("Attachment")
