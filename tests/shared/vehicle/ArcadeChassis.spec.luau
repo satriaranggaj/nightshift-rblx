@@ -116,4 +116,27 @@ return function()
 			expect(step.steerOut).to.equal(CONFIG.steerSmooth * (1 / 20))
 		end)
 	end)
+
+	describe("approachVelocity", function()
+		it("advances toward the target at most rate*dt", function()
+			expect(ArcadeChassis.approachVelocity(0, 60, 30, DT)).to.equal(30 * DT)
+			expect(ArcadeChassis.approachVelocity(59.5, 60, 30, DT)).to.equal(0.5)
+		end)
+
+		it("handles the reverse direction symmetrically", function()
+			expect(ArcadeChassis.approachVelocity(0, -20, 20, DT)).to.equal(-20 * DT)
+		end)
+
+		it("returns zero for bad rates and guards NaN", function()
+			expect(ArcadeChassis.approachVelocity(10, 60, 0, DT)).to.equal(0)
+			expect(ArcadeChassis.approachVelocity(10, 60, -5, DT)).to.equal(0)
+			expect(ArcadeChassis.approachVelocity(0 / 0, 60, 30, DT)).to.equal(30 * DT)
+			expect(ArcadeChassis.approachVelocity(10, 0 / 0, 30, DT)).to.equal(0)
+		end)
+
+		it("clamps pathological dt like step()", function()
+			expect(ArcadeChassis.approachVelocity(0, 60, 30, 10)).to.equal(30 * (1 / 20))
+			expect(ArcadeChassis.approachVelocity(0, 60, 30, 0)).to.equal(30 * (1 / 60))
+		end)
+	end)
 end

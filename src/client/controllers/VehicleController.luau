@@ -46,6 +46,9 @@ export type VehicleController = typeof(setmetatable(
 		_connection: RBXScriptConnection?,
 		_set: ConstraintSet.ConstraintSet?,
 		_steer: number,
+		-- TEMPORARY Phase 2D: bounded physics diagnosis (see _maybeDiagnose).
+		_diagEnabled: boolean,
+		_diagLast: number,
 	},
 	VehicleController
 ))
@@ -61,7 +64,15 @@ function VehicleController.new(input: InputSource, config: ArcadeChassis.Chassis
 		_connection = nil,
 		_set = nil,
 		_steer = 0,
+		_diagEnabled = false,
+		_diagLast = 0,
 	}, VehicleController)
+end
+
+-- TEMPORARY Phase 2D: enables the throttled physics snapshot. Must not ship
+-- as a gameplay feature; remove alongside the 2D diagnostic rig output.
+function VehicleController.setDiagnosticsEnabled(self: VehicleController, enabled: boolean): ()
+	self._diagEnabled = enabled
 end
 
 function VehicleController.isAttached(self: VehicleController): boolean
@@ -138,10 +149,11 @@ function VehicleController._step(self: VehicleController, dt: number): ()
 	local flatVel = Vector3.new(velocity.X, 0, velocity.Z)
 	local fwdSpeed = flatVel:Dot(flatForward)
 
-	local step = ArcadeChassis.step(self._input:getInput(), fwdSpeed, self._steer, self._config, dt)
+	local input = self._input:getInput()
+	local step = ArcadeChassis.step(input, fwdSpeed, self._steer, self._config, dt)
 	self._steer = step.steerOut
 
-	local dvForward = math.clamp(step.targetForwardSpeed - fwdSpeed, -step.forwardRate * dt, step.forwardRate * dt)
+	local dvForward = ArcadeChassis.approachVelocity(fwdSpeed, step.targetForwardSpeed, step.forwardRate, dt)
 	local accelF = dvForward / math.max(dt, 1e-4)
 	local lateral = flatVel - flatForward * fwdSpeed
 	local dvLateral = lateral * -1
@@ -162,6 +174,104 @@ function VehicleController._step(self: VehicleController, dt: number): ()
 
 	local _, yRot, _ = chassis.CFrame:ToEulerAnglesYXZ()
 	upright.CFrame = CFrame.new(chassis.Position) * CFrame.Angles(0, yRot, 0)
+
+	self:_applyIsolation(yaw, upright)
+	self:_maybeDiagnose(input, step, fwdSpeed, mass, accelF, accelL, total, force, chassis, velocity)
+end
+
+-- DEV-ONLY Phase 2D isolation (command-bar driven, default off/full):
+-- set the vehicle model's NIGHTSHIFT_Isolate attribute to "forceOnly" or
+-- "noUpright" to test VectorForce alone or without the upright assist.
+-- Production behavior is always the full stack; this changes nothing unless
+-- the attribute is explicitly set in Studio.
+function VehicleController._applyIsolation(self: VehicleController, yaw: AngularVelocity, upright: AlignOrientation): ()
+	local model = self._model
+	local mode: any = nil
+	if model ~= nil then
+		mode = model:GetAttribute("NIGHTSHIFT_Isolate")
+	end
+	if mode == "forceOnly" then
+		yaw.Enabled = false
+		upright.Enabled = false
+	elseif mode == "noUpright" then
+		yaw.Enabled = true
+		upright.Enabled = false
+	else
+		yaw.Enabled = true
+		upright.Enabled = true
+	end
+end
+
+-- TEMPORARY Phase 2D diagnosis: at most one compact snapshot per second, and
+-- only while input is meaningfully non-neutral. Never per-frame.
+function VehicleController._maybeDiagnose(
+	self: VehicleController,
+	input: ArcadeChassis.VehicleInput,
+	step: ArcadeChassis.ChassisStep,
+	fwdSpeed: number,
+	mass: number,
+	accelF: number,
+	accelL: Vector3,
+	total: Vector3,
+	force: VectorForce,
+	chassis: BasePart,
+	velocity: Vector3
+): ()
+	if not self._diagEnabled then
+		return
+	end
+	if math.abs(input.throttle) < 0.01 and math.abs(input.brake) < 0.01 and math.abs(input.steer) < 0.01 then
+		return
+	end
+	local now = os.clock()
+	if now - self._diagLast < 1 then
+		return
+	end
+	self._diagLast = now
+	local set = self._set
+	local attachOk = set ~= nil and set.attachment.Parent == chassis
+	print(
+		string.format(
+			"[NIGHTSHIFT Physics] in=(%.2f,%.2f,%.2f) fwd=%.2f tgt=%.2f rate=%.2f sOut=%.2f yaw=%.2f",
+			input.throttle,
+			input.brake,
+			input.steer,
+			fwdSpeed,
+			step.targetForwardSpeed,
+			step.forwardRate,
+			step.steerOut,
+			step.yawRate
+		)
+	)
+	print(
+		string.format(
+			"[NIGHTSHIFT Physics] mass=%.2f aF=%.2f aL=%.2f aTot=%.2f force=(%.1f,%.1f,%.1f) en=%s rel=%s com=%s",
+			mass,
+			accelF,
+			accelL.Magnitude,
+			total.Magnitude,
+			force.Force.X,
+			force.Force.Y,
+			force.Force.Z,
+			tostring(force.Enabled),
+			tostring(force.RelativeTo),
+			tostring(force.ApplyAtCenterOfMass)
+		)
+	)
+	print(
+		string.format(
+			"[NIGHTSHIFT Physics] vel=(%.2f,%.2f,%.2f) avel=(%.2f,%.2f,%.2f) anchored=%s asm=%.2f attach=%s",
+			velocity.X,
+			velocity.Y,
+			velocity.Z,
+			chassis.AssemblyAngularVelocity.X,
+			chassis.AssemblyAngularVelocity.Y,
+			chassis.AssemblyAngularVelocity.Z,
+			tostring(chassis.Anchored),
+			chassis.AssemblyMass,
+			tostring(attachOk)
+		)
+	)
 end
 
 return VehicleController

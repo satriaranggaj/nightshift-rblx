@@ -77,6 +77,8 @@ return function()
 			-- Sibling constraints DO use world-space actuation.
 			expect(created[2]._sets.RelativeTo).to.equal("World")
 			expect(created[3]._sets.RelativeTo).to.equal("World")
+			-- Drive force applies at the assembly center (no lever-arm torque).
+			expect(created[2]._sets.ApplyAtCenterOfMass).to.equal(true)
 		end)
 
 		it("scales yaw torque from mass", function()

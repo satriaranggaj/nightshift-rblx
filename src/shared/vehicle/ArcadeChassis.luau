@@ -70,6 +70,19 @@ function ArcadeChassis.validateConfig(config: any): (boolean, string)
 	return true, "ok"
 end
 
+-- Pure velocity-approach helper used by the controller to convert step targets
+-- into per-step velocity deltas. Same dt-clamp convention as step(); non-finite
+-- or non-positive rates command zero delta (never NaN, never a jump).
+function ArcadeChassis.approachVelocity(current: number, target: number, rate: number, dt: number): number
+	local c = if current == current then current else 0
+	local t = if target == target then target else c
+	if rate ~= rate or rate <= 0 then
+		return 0
+	end
+	local stepDt = if dt ~= dt or dt <= 0 then 1 / 60 else math.min(dt, 1 / 20)
+	return math.clamp(t - c, -rate * stepDt, rate * stepDt)
+end
+
 function ArcadeChassis.step(
 	rawInput: any,
 	forwardSpeed: number,

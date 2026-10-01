@@ -99,16 +99,39 @@ tarmac.Parent = rig
 
 local vehicle = buildVehicle(rig)
 
+-- DEV-ONLY Phase 2D assembly audit: any anchored descendant would silently
+-- weld the vehicle to the world. Runs once at build; prints only offenders.
+for _, descendant in vehicle:GetDescendants() do
+	if descendant:IsA("BasePart") and descendant.Anchored then
+		warn("[NIGHTSHIFT Rig] Anchored part in assembly: " .. descendant:GetFullName())
+	end
+end
+
 local function handOwnership(player: Player): ()
 	local chassis = VehicleContract.resolveRoot(vehicle)
-	if chassis ~= nil then
-		local ok, _ = pcall(function()
-			chassis:SetNetworkOwner(player)
-		end)
-		if not ok then
-			warn("[NIGHTSHIFT Rig] Could not assign network ownership.")
-		end
+	if chassis == nil then
+		warn("[NIGHTSHIFT Rig] Ownership skipped: root part missing.")
+		return
 	end
+	local ok, err = pcall(function()
+		chassis:SetNetworkOwner(player)
+	end)
+	if not ok then
+		warn("[NIGHTSHIFT Rig] SetNetworkOwner failed: " .. tostring(err))
+		return
+	end
+	-- DEV-ONLY Phase 2D: confirm effective ownership (never assume the pcall).
+	local owner = chassis:GetNetworkOwner()
+	local ownerName = if owner ~= nil then owner.Name else "<server/none>"
+	print(
+		string.format(
+			"[NIGHTSHIFT Rig] Ownership: player=%s assemblyOwner=%s anchored=%s mass=%.2f",
+			player.Name,
+			ownerName,
+			tostring(chassis.Anchored),
+			chassis.AssemblyMass
+		)
+	)
 end
 
 for _, player in Players:GetPlayers() do

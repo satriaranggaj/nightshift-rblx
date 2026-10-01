@@ -61,6 +61,10 @@ function ConstraintSet.build(root: BasePart, params: ConstraintParams, factory: 
 		force.Name = "NIGHTSHIFT_DriveForce"
 		force.RelativeTo = Enum.ActuatorRelativeTo.World
 		force.Attachment0 = attachment
+		-- Applied at the assembly center of mass: the drive force must never
+		-- gain a lever arm (and unwanted torque) from the attachment position,
+		-- regardless of future mass distribution.
+		force.ApplyAtCenterOfMass = true
 		force.Force = Vector3.zero
 		force.Parent = root
 
