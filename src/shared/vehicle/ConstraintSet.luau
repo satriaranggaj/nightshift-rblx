@@ -110,4 +110,22 @@ function ConstraintSet.destroy(set: ConstraintSet?): ()
 	set.attachment:Destroy()
 end
 
+export type IsolationMode = "FORCE_ONLY" | "WITH_YAW" | "FULL"
+
+-- DEV-ONLY Phase 2E isolation contract (pure, spec-pinned):
+-- FORCE_ONLY = VectorForce alone (no yaw, no upright),
+-- WITH_YAW   = VectorForce + AngularVelocity (no upright),
+-- FULL       = all three (intended Phase-2 configuration).
+-- Anything unrecognized normalizes to FULL, so a typo can never silently
+-- disable stabilization.
+function ConstraintSet.resolveMode(raw: any): IsolationMode
+	if raw == "FORCE_ONLY" then
+		return "FORCE_ONLY"
+	elseif raw == "WITH_YAW" then
+		return "WITH_YAW"
+	else
+		return "FULL"
+	end
+end
+
 return ConstraintSet

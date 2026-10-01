@@ -49,6 +49,9 @@ export type VehicleController = typeof(setmetatable(
 		-- TEMPORARY Phase 2D: bounded physics diagnosis (see _maybeDiagnose).
 		_diagEnabled: boolean,
 		_diagLast: number,
+		-- TEMPORARY Phase 2E: DEV isolation mode (see _applyIsolation).
+		_isolationMode: ConstraintSet.IsolationMode,
+		_isolationLogged: string?,
 	},
 	VehicleController
 ))
@@ -66,6 +69,8 @@ function VehicleController.new(input: InputSource, config: ArcadeChassis.Chassis
 		_steer = 0,
 		_diagEnabled = false,
 		_diagLast = 0,
+		_isolationMode = "FULL",
+		_isolationLogged = nil,
 	}, VehicleController)
 end
 
@@ -73,6 +78,13 @@ end
 -- as a gameplay feature; remove alongside the 2D diagnostic rig output.
 function VehicleController.setDiagnosticsEnabled(self: VehicleController, enabled: boolean): ()
 	self._diagEnabled = enabled
+end
+
+-- TEMPORARY Phase 2E: sets the DEV isolation mode (default FULL). The model's
+-- NIGHTSHIFT_PhysicsMode attribute, when present, overrides this per step so
+-- Studio can switch modes live from the command bar without re-syncing.
+function VehicleController.setIsolationMode(self: VehicleController, mode: any): ()
+	self._isolationMode = ConstraintSet.resolveMode(mode)
 end
 
 function VehicleController.isAttached(self: VehicleController): boolean
@@ -179,26 +191,32 @@ function VehicleController._step(self: VehicleController, dt: number): ()
 	self:_maybeDiagnose(input, step, fwdSpeed, mass, accelF, accelL, total, force, chassis, velocity)
 end
 
--- DEV-ONLY Phase 2D isolation (command-bar driven, default off/full):
--- set the vehicle model's NIGHTSHIFT_Isolate attribute to "forceOnly" or
--- "noUpright" to test VectorForce alone or without the upright assist.
--- Production behavior is always the full stack; this changes nothing unless
--- the attribute is explicitly set in Studio.
+-- TEMPORARY Phase 2E isolation: toggles Enabled on the EXISTING constraints
+-- (never rebuilds). Effective mode = model attribute NIGHTSHIFT_PhysicsMode
+-- when set, else the configured default. Logs once per effective change.
 function VehicleController._applyIsolation(self: VehicleController, yaw: AngularVelocity, upright: AlignOrientation): ()
+	local raw: any = self._isolationMode
 	local model = self._model
-	local mode: any = nil
 	if model ~= nil then
-		mode = model:GetAttribute("NIGHTSHIFT_Isolate")
+		local attr = model:GetAttribute("NIGHTSHIFT_PhysicsMode")
+		if attr ~= nil then
+			raw = attr
+		end
 	end
-	if mode == "forceOnly" then
+	local mode = ConstraintSet.resolveMode(raw)
+	if mode == "FORCE_ONLY" then
 		yaw.Enabled = false
 		upright.Enabled = false
-	elseif mode == "noUpright" then
+	elseif mode == "WITH_YAW" then
 		yaw.Enabled = true
 		upright.Enabled = false
 	else
 		yaw.Enabled = true
 		upright.Enabled = true
+	end
+	if self._isolationLogged ~= mode then
+		self._isolationLogged = mode
+		print("[NIGHTSHIFT PhysicsMode] " .. mode)
 	end
 end
 
@@ -260,7 +278,10 @@ function VehicleController._maybeDiagnose(
 	)
 	print(
 		string.format(
-			"[NIGHTSHIFT Physics] vel=(%.2f,%.2f,%.2f) avel=(%.2f,%.2f,%.2f) anchored=%s asm=%.2f attach=%s",
+			"[NIGHTSHIFT Physics] pos=(%.2f,%.2f,%.2f) vel=(%.2f,%.2f,%.2f) avel=(%.2f,%.2f,%.2f) anchored=%s asm=%.2f attach=%s",
+			chassis.Position.X,
+			chassis.Position.Y,
+			chassis.Position.Z,
 			velocity.X,
 			velocity.Y,
 			velocity.Z,

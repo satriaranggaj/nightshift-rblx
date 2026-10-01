@@ -26,6 +26,12 @@ local DEBUG_INPUT = true
 -- Remove once the stationary-vehicle cause is measured.
 local DEBUG_PHYSICS = true
 
+-- TEMPORARY Phase 2E: DEV constraint-isolation default. FIRST RETEST MUST USE
+-- "FORCE_ONLY" (VectorForce alone). "WITH_YAW" adds AngularVelocity; "FULL" is
+-- the intended Phase-2 stack. The NIGHTSHIFT_PhysicsMode model attribute, when
+-- set in Studio, overrides this live without re-syncing.
+local PHYSICS_ISOLATION = "FORCE_ONLY"
+
 local ClientMain = {}
 
 -- Event-driven vehicle readiness (no sleeps, no timeouts): returns once the
@@ -84,6 +90,7 @@ function ClientMain.start(): ()
 	if vehicle:IsA("Model") then
 		local driver = VehicleController.new(input, ChassisConfig.TEST_BLOCKOUT)
 		driver:setDiagnosticsEnabled(DEBUG_PHYSICS)
+		driver:setIsolationMode(PHYSICS_ISOLATION)
 		local ok, message = driver:attach(vehicle)
 		if ok then
 			warn("[NIGHTSHIFT] VehicleController attached (Phase 2).")

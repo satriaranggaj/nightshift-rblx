@@ -99,11 +99,21 @@ tarmac.Parent = rig
 
 local vehicle = buildVehicle(rig)
 
--- DEV-ONLY Phase 2D assembly audit: any anchored descendant would silently
--- weld the vehicle to the world. Runs once at build; prints only offenders.
+-- DEV-ONLY Phase 2D/2E assembly audit: runs once at build. Reports every
+-- BasePart's structural flags so a welded descendant with surprising assembly
+-- behavior is visible without per-frame spam.
 for _, descendant in vehicle:GetDescendants() do
-	if descendant:IsA("BasePart") and descendant.Anchored then
-		warn("[NIGHTSHIFT Rig] Anchored part in assembly: " .. descendant:GetFullName())
+	if descendant:IsA("BasePart") then
+		local root = descendant.AssemblyRootPart
+		print(
+			string.format(
+				"[NIGHTSHIFT Rig] Part: name=%s anchored=%s massless=%s root=%s",
+				descendant.Name,
+				tostring(descendant.Anchored),
+				tostring(descendant.Massless),
+				if root ~= nil then root.Name else "<none>"
+			)
+		)
 	end
 end
 
