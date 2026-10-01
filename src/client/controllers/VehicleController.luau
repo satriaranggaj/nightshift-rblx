@@ -152,12 +152,8 @@ function VehicleController._step(self: VehicleController, dt: number): ()
 	local mass = math.max(0.001, chassis.AssemblyMass)
 
 	local velocity = chassis.AssemblyLinearVelocity
-	local flatForward = Vector3.new(-chassis.CFrame.LookVector.X, 0, -chassis.CFrame.LookVector.Z)
-	if flatForward.Magnitude < 0.001 then
-		flatForward = Vector3.new(0, 0, -1)
-	else
-		flatForward = flatForward.Unit
-	end
+	-- Forward convention: chassis LookVector (nose -Z), XZ-projected.
+	local flatForward = ArcadeChassis.projectForward(chassis.CFrame.LookVector)
 	local flatVel = Vector3.new(velocity.X, 0, velocity.Z)
 	local fwdSpeed = flatVel:Dot(flatForward)
 

@@ -76,10 +76,12 @@ function ConstraintSet.build(root: BasePart, params: ConstraintParams, factory: 
 		yaw.MaxTorque = math.max(1, params.mass * params.yawTorqueFactor)
 		yaw.Parent = root
 
-		-- AlignOrientation: Responsiveness only (plus MaxTorque). No RelativeTo,
-		-- Stiffness, or Damping: none of those exist on this class.
+		-- AlignOrientation: Responsiveness + MaxTorque only. No RelativeTo,
+		-- Stiffness, or Damping: none of those exist on this class. Mode is
+		-- explicit single-attachment world-space control (no Attachment1).
 		local upright = track(create("AlignOrientation")) :: AlignOrientation
 		upright.Name = "NIGHTSHIFT_Upright"
+		upright.Mode = Enum.OrientationAlignmentMode.OneAttachment
 		upright.Attachment0 = attachment
 		upright.Responsiveness = params.uprightResponsiveness
 		upright.MaxTorque = params.uprightMaxTorque

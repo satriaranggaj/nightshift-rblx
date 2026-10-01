@@ -20,7 +20,12 @@ Do not jump ahead; one milestone per task.
 - Acceptance: same logical gesture → identical `VehicleInput` on all adapters; bounds enforced; tests green.
 - Studio: PC keyboard drives a debug readout; mobile emulator shows touch stub values.
 
-## Phase 2 — Basic arcade chassis ✅
+## Phase 2 — Basic arcade chassis ✅ code / 🧪 Studio acceptance PENDING
+
+- Status note: the ✅ covers implementation + automated gates only. Studio
+  acceptance requires proving Input → ArcadeChassis → VectorForce → actual
+  assembly translation in FULL constraint mode (2F retest sequence:
+  FORCE_ONLY → WITH_YAW → FULL). Do not treat the code checkbox as done.
 
 - Goal: one test block-car moves from `VehicleInput` (PC-first, touch-compatible).
 - Scope: single physics impl (accel/brake/grip baseline), spawn-on-pad harness.

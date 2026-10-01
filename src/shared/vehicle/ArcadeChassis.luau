@@ -83,6 +83,18 @@ function ArcadeChassis.approachVelocity(current: number, target: number, rate: n
 	return math.clamp(t - c, -rate * stepDt, rate * stepDt)
 end
 
+-- Pure horizontal-forward projection. Forward is the chassis LookVector
+-- (local -Z nose) projected onto XZ and normalized; degenerate (near-vertical)
+-- looks fall back to world -Z so the convention never flips. Phase 2F fix: the
+-- controller previously negated LookVector and drove local +Z.
+function ArcadeChassis.projectForward(look: Vector3): Vector3
+	local flat = Vector3.new(look.X, 0, look.Z)
+	if flat.Magnitude < 1e-3 then
+		return Vector3.new(0, 0, -1)
+	end
+	return flat.Unit
+end
+
 function ArcadeChassis.step(
 	rawInput: any,
 	forwardSpeed: number,

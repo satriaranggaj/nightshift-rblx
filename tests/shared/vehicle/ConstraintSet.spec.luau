@@ -72,6 +72,7 @@ return function()
 			expect(uprightSets.Stiffness).to.equal(nil)
 			expect(uprightSets.Damping).to.equal(nil)
 			expect(uprightSets.Attachment0 ~= nil).to.equal(true)
+			expect(tostring(uprightSets.Mode)).to.equal("OneAttachment")
 			expect(uprightSets.Responsiveness).to.equal(PARAMS.uprightResponsiveness)
 			expect(uprightSets.MaxTorque).to.equal(PARAMS.uprightMaxTorque)
 			-- Sibling constraints DO use world-space actuation.

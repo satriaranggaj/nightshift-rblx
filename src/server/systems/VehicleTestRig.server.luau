@@ -52,6 +52,14 @@ local function buildVehicle(parent: Instance): Model
 	chassis.CanCollide = true
 	chassis.Anchored = false
 	chassis.Material = Enum.Material.SmoothPlastic
+	-- DEV-ONLY Phase 2F contact policy: the blockout chassis IS the contact
+	-- patch (wheels are visual, CanCollide=false), so default material friction
+	-- locks it: breakaway ≈ μ·196 ≫ forwardAccel 30. Explicit low-friction
+	-- contact instead of raising drive force (which stays untouched).
+	-- density 0.7 preserves the measured assembly mass (~23.5);
+	-- frictionWeight 100 dominates the pairwise average against the tarmac so
+	-- combined μ ≈ 0.05 → breakaway ≈ 10 < 30. DEV/test-rig values, not tuning.
+	chassis.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.05, 0, 100, 1)
 	chassis.Color = Color3.fromRGB(200, 60, 40)
 	chassis.Parent = model
 
