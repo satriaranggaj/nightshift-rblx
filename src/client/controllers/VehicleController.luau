@@ -180,9 +180,9 @@ function VehicleController._step(self: VehicleController, dt: number): ()
 	yaw.MaxTorque = math.max(1, mass * self._config.yawTorqueFactor)
 	yaw.AngularVelocity = Vector3.new(0, step.yawRate, 0)
 
-	local _, yRot, _ = chassis.CFrame:ToEulerAnglesYXZ()
-	upright.CFrame = CFrame.new(chassis.Position) * CFrame.Angles(0, yRot, 0)
-
+	-- NOTE: no per-step upright CFrame targeting. The upright assist is a
+	-- static primary-axis goal (chassis up ∥ world up); yaw stays free.
+	-- See ConstraintSet header for the verified axis contract.
 	self:_applyIsolation(yaw, upright)
 	self:_maybeDiagnose(input, step, fwdSpeed, mass, accelF, accelL, total, force, chassis, velocity)
 end
@@ -244,9 +244,11 @@ function VehicleController._maybeDiagnose(
 	self._diagLast = now
 	local set = self._set
 	local attachOk = set ~= nil and set.attachment.Parent == chassis
+	-- 1.0 = perfectly upright; near 1.0 = healthy; lower = tilted.
+	local uprightDot = chassis.CFrame.UpVector:Dot(Vector3.yAxis)
 	print(
 		string.format(
-			"[NIGHTSHIFT Physics] in=(%.2f,%.2f,%.2f) fwd=%.2f tgt=%.2f rate=%.2f sOut=%.2f yaw=%.2f",
+			"[NIGHTSHIFT Physics] in=(%.2f,%.2f,%.2f) fwd=%.2f tgt=%.2f rate=%.2f sOut=%.2f yaw=%.2f up=%.2f",
 			input.throttle,
 			input.brake,
 			input.steer,
@@ -254,7 +256,8 @@ function VehicleController._maybeDiagnose(
 			step.targetForwardSpeed,
 			step.forwardRate,
 			step.steerOut,
-			step.yawRate
+			step.yawRate,
+			uprightDot
 		)
 	)
 	print(

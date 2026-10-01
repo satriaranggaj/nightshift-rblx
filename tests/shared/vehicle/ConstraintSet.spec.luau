@@ -73,6 +73,13 @@ return function()
 			expect(uprightSets.Damping).to.equal(nil)
 			expect(uprightSets.Attachment0 ~= nil).to.equal(true)
 			expect(tostring(uprightSets.Mode)).to.equal("OneAttachment")
+			-- Yaw-decoupled upright: primary-axis-only alignment to world up.
+			expect(tostring(uprightSets.AlignType)).to.equal("PrimaryAxisParallel")
+			expect(uprightSets.PrimaryAxis.X).to.equal(0)
+			expect(uprightSets.PrimaryAxis.Y).to.equal(1)
+			expect(uprightSets.PrimaryAxis.Z).to.equal(0)
+			-- Drive attachment is rolled so its X axis rides chassis up.
+			expect(created[1]._sets.CFrame ~= nil).to.equal(true)
 			expect(uprightSets.Responsiveness).to.equal(PARAMS.uprightResponsiveness)
 			expect(uprightSets.MaxTorque).to.equal(PARAMS.uprightMaxTorque)
 			-- Sibling constraints DO use world-space actuation.

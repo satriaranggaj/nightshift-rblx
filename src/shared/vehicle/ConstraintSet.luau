@@ -6,14 +6,18 @@
 -- constraints. No services required; the creation function defaults to
 -- Instance.new and is injectable for deterministic failure tests.
 --
--- AlignOrientation mode (single-attachment, world-space): with only
--- Attachment0 set, the constraint drives the part toward the world-space
--- CFrame assigned each step. The controller derives that target from the
--- chassis's OWN yaw, so the assist corrects pitch/roll only and never fights
--- commanded yaw. NOTE: AlignOrientation exposes ONLY Responsiveness (plus
--- MaxTorque/CFrame/attachments) — it has NO RelativeTo, Stiffness, or Damping;
--- assigning any of those errors at runtime. VectorForce/AngularVelocity do
--- expose RelativeTo, and use World space.
+-- Rotational separation of powers (yaw-decoupled upright, Phase 2G):
+-- AngularVelocity owns YAW; AlignOrientation owns UPRIGHT (pitch/roll) only.
+-- The upright uses single-attachment PRIMARY-AXIS alignment
+-- (AlignType.PrimaryAxisParallel): torque occurs ONLY for primary-axis
+-- misalignment, so rotation about world up stays free for AngularVelocity.
+-- Geometry: the drive attachment is rolled 90° about Z so its local X axis
+-- rides chassis up; PrimaryAxis (goal X) = world up. Verified against the
+-- AlignOrientation/Attachment API: old Parallel/Perpendicular enum values and
+-- PrimaryAxisOnly are deprecated (do not use); AlignOrientation has NO
+-- RelativeTo, Stiffness, or Damping (assigning those errors at runtime);
+-- Attachment.Axis derives from its CFrame (rotating the attachment aims it).
+-- VectorForce/AngularVelocity expose RelativeTo and use World space.
 
 export type ConstraintParams = {
 	mass: number,
@@ -55,6 +59,10 @@ function ConstraintSet.build(root: BasePart, params: ConstraintParams, factory: 
 	local ok, result = pcall(function(): ConstraintSet
 		local attachment = track(create("Attachment")) :: Attachment
 		attachment.Name = "NIGHTSHIFT_Drive"
+		-- Roll local X onto chassis up (see header): the primary-axis goal
+		-- below then corrects pitch/roll while leaving yaw free. Orientation
+		-- is irrelevant to VectorForce/AngularVelocity (world-space vectors).
+		attachment.CFrame = CFrame.Angles(0, 0, math.pi / 2)
 		attachment.Parent = root
 
 		local force = track(create("VectorForce")) :: VectorForce
@@ -76,12 +84,15 @@ function ConstraintSet.build(root: BasePart, params: ConstraintParams, factory: 
 		yaw.MaxTorque = math.max(1, params.mass * params.yawTorqueFactor)
 		yaw.Parent = root
 
-		-- AlignOrientation: Responsiveness + MaxTorque only. No RelativeTo,
-		-- Stiffness, or Damping: none of those exist on this class. Mode is
-		-- explicit single-attachment world-space control (no Attachment1).
+		-- Yaw-decoupled upright: AlignType.PrimaryAxisParallel enforces ONLY the
+		-- primary-axis relationship (attachment Axis ∥ PrimaryAxis = world up),
+		-- so yaw about that axis stays free for AngularVelocity. No RelativeTo,
+		-- Stiffness, or Damping: none of those exist on this class.
 		local upright = track(create("AlignOrientation")) :: AlignOrientation
 		upright.Name = "NIGHTSHIFT_Upright"
 		upright.Mode = Enum.OrientationAlignmentMode.OneAttachment
+		upright.AlignType = Enum.AlignType.PrimaryAxisParallel
+		upright.PrimaryAxis = Vector3.new(0, 1, 0)
 		upright.Attachment0 = attachment
 		upright.Responsiveness = params.uprightResponsiveness
 		upright.MaxTorque = params.uprightMaxTorque

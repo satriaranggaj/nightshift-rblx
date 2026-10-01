@@ -61,7 +61,10 @@ Controller (gamepad) ─┘       (normalized)      (arcade)               (sing
   `shared/vehicle/ArcadeChassis.step` (pure policy: forward/brake/reverse/coast
   targets, smoothed steer, standstill-scaled yaw) + `shared/config/ChassisConfig`
   (data only; `TEST_BLOCKOUT` rig values) → single-assembly VectorForce /
-  AngularVelocity / AlignOrientation constraints. Driver's client simulates via
+  AngularVelocity / AlignOrientation constraints. Rotational separation is
+  structural: AngularVelocity owns yaw; AlignOrientation owns upright ONLY via
+  primary-axis alignment (attachment X rolled onto chassis up, goal = world up),
+  so it can never command yaw. Driver's client simulates via
   NetworkOwnership; server re-simulation/plausibility is a Phase 11 concern.
 
 ## Why this structure (Roblox fit)
