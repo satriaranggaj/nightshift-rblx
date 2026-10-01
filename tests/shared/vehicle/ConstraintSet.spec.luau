@@ -3,17 +3,16 @@
 -- Non-strict by exception: TestEZ injects describe/it/expect as globals.
 -- A mock creation factory stands in for Instance.new, so transactional
 -- rollback and the AlignOrientation API contract are verified deterministically.
--- Regression targets (Phase 2B):
---   * AlignOrientation must never be assigned RelativeTo (invalid property,
---     runtime error on attach).
+-- Regression targets (Phase 2B/2C):
+--   * AlignOrientation must use ONLY its real API (Responsiveness/MaxTorque).
+--     RelativeTo, Stiffness, Damping do not exist on it (runtime attach errors).
 --   * A mid-build failure must destroy every partial object (no orphans).
 
 local ConstraintSet = require(game:GetService("ReplicatedStorage").Shared.vehicle.ConstraintSet)
 
 local PARAMS = {
 	mass = 100,
-	uprightStiffness = 1500,
-	uprightDamping = 300,
+	uprightResponsiveness = 200,
 	uprightMaxTorque = 50000,
 	yawTorqueFactor = 40,
 }
@@ -64,14 +63,17 @@ return function()
 			end
 		end)
 
-		it("never assigns RelativeTo on AlignOrientation (invalid property)", function()
+		it("assigns only valid AlignOrientation properties", function()
 			local factory, created = makeFactory(nil)
 			local set, _ = ConstraintSet.build(mockRoot(), PARAMS, factory)
 			expect(set ~= nil).to.equal(true)
 			local uprightSets = created[4]._sets
 			expect(uprightSets.RelativeTo).to.equal(nil)
+			expect(uprightSets.Stiffness).to.equal(nil)
+			expect(uprightSets.Damping).to.equal(nil)
 			expect(uprightSets.Attachment0 ~= nil).to.equal(true)
-			expect(uprightSets.Stiffness).to.equal(PARAMS.uprightStiffness)
+			expect(uprightSets.Responsiveness).to.equal(PARAMS.uprightResponsiveness)
+			expect(uprightSets.MaxTorque).to.equal(PARAMS.uprightMaxTorque)
 			-- Sibling constraints DO use world-space actuation.
 			expect(created[2]._sets.RelativeTo).to.equal("World")
 			expect(created[3]._sets.RelativeTo).to.equal("World")

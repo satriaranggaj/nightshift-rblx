@@ -4,8 +4,9 @@
 -- here so simulation (ArcadeChassis) and the controller never hardcode feel.
 -- Validation logic lives in ArcadeChassis.validateConfig, not here.
 --
--- Units: speeds studs/s, accel rates studs/s^2, yaw rad/s, stiffness/damping
--- in AlignOrientation units, forces derived from assembly mass at runtime.
+-- Units: speeds studs/s, accel rates studs/s^2, yaw rad/s, upright
+-- Responsiveness in AlignOrientation units, forces derived from assembly
+-- mass at runtime.
 
 export type ChassisConfig = {
 	maxForwardSpeed: number,
@@ -22,9 +23,9 @@ export type ChassisConfig = {
 	lateralGrip: number,
 	-- |forward speed| at/below which held brake engages reverse.
 	reverseThreshold: number,
-	-- Prototype upright assist (isolated; see ArcadeChassis).
-	uprightStiffness: number,
-	uprightDamping: number,
+	-- Prototype upright assist (isolated; see ConstraintSet). AlignOrientation
+	-- exposes Responsiveness (not Stiffness/Damping, which do not exist).
+	uprightResponsiveness: number,
 	uprightMaxTorque: number,
 	-- Yaw authority scale (x assembly mass) for the AngularVelocity constraint.
 	yawTorqueFactor: number,
@@ -47,8 +48,7 @@ local ChassisConfig = {
 		steerSmooth = 6,
 		lateralGrip = 10,
 		reverseThreshold = 2,
-		uprightStiffness = 1500,
-		uprightDamping = 300,
+		uprightResponsiveness = 200,
 		uprightMaxTorque = 50000,
 		yawTorqueFactor = 40,
 		maxForceAccel = 150,

@@ -50,6 +50,7 @@ function ArcadeChassis.validateConfig(config: any): (boolean, string)
 		"steerYawRate",
 		"steerSmooth",
 		"lateralGrip",
+		"uprightResponsiveness",
 		"yawTorqueFactor",
 		"maxForceAccel",
 	}
@@ -59,7 +60,7 @@ function ArcadeChassis.validateConfig(config: any): (boolean, string)
 			return false, key .. " must be a positive finite number"
 		end
 	end
-	local nonNegative = { "reverseThreshold", "uprightStiffness", "uprightDamping", "uprightMaxTorque" }
+	local nonNegative = { "reverseThreshold", "uprightMaxTorque" }
 	for _, key in nonNegative do
 		local value = (config :: any)[key]
 		if typeof(value) ~= "number" or value ~= value or value < 0 then

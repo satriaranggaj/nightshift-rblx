@@ -86,8 +86,7 @@ function VehicleController.attach(self: VehicleController, model: Model): (boole
 	-- attach leaves no orphan constraints and self stays pristine.
 	local set, buildError = ConstraintSet.build(primary, {
 		mass = math.max(0.001, primary.AssemblyMass),
-		uprightStiffness = self._config.uprightStiffness,
-		uprightDamping = self._config.uprightDamping,
+		uprightResponsiveness = self._config.uprightResponsiveness,
 		uprightMaxTorque = self._config.uprightMaxTorque,
 		yawTorqueFactor = self._config.yawTorqueFactor,
 	})

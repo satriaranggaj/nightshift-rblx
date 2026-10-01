@@ -10,13 +10,14 @@
 -- Attachment0 set, the constraint drives the part toward the world-space
 -- CFrame assigned each step. The controller derives that target from the
 -- chassis's OWN yaw, so the assist corrects pitch/roll only and never fights
--- commanded yaw. NOTE: AlignOrientation has NO RelativeTo property (setting it
--- errors at runtime); VectorForce/AngularVelocity do, and use World space.
+-- commanded yaw. NOTE: AlignOrientation exposes ONLY Responsiveness (plus
+-- MaxTorque/CFrame/attachments) — it has NO RelativeTo, Stiffness, or Damping;
+-- assigning any of those errors at runtime. VectorForce/AngularVelocity do
+-- expose RelativeTo, and use World space.
 
 export type ConstraintParams = {
 	mass: number,
-	uprightStiffness: number,
-	uprightDamping: number,
+	uprightResponsiveness: number,
 	uprightMaxTorque: number,
 	yawTorqueFactor: number,
 }
@@ -71,12 +72,12 @@ function ConstraintSet.build(root: BasePart, params: ConstraintParams, factory: 
 		yaw.MaxTorque = math.max(1, params.mass * params.yawTorqueFactor)
 		yaw.Parent = root
 
-		-- AlignOrientation: intentionally NO RelativeTo (property does not exist).
+		-- AlignOrientation: Responsiveness only (plus MaxTorque). No RelativeTo,
+		-- Stiffness, or Damping: none of those exist on this class.
 		local upright = track(create("AlignOrientation")) :: AlignOrientation
 		upright.Name = "NIGHTSHIFT_Upright"
 		upright.Attachment0 = attachment
-		upright.Stiffness = params.uprightStiffness
-		upright.Damping = params.uprightDamping
+		upright.Responsiveness = params.uprightResponsiveness
 		upright.MaxTorque = params.uprightMaxTorque
 		upright.Parent = root
 
