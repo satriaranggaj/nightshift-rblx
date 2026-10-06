@@ -66,6 +66,13 @@ Controller (gamepad) ─┘       (normalized)      (arcade)               (sing
   primary-axis alignment (attachment X rolled onto chassis up, goal = world up),
   so it can never command yaw. Driver's client simulates via
   NetworkOwnership; server re-simulation/plausibility is a Phase 11 concern.
+- Phase 2I added the occupancy slice without touching the pipeline:
+  ProximityPrompt intent → `server/services/VehicleService` (validates,
+  seats, owns driver registry) → `NIGHTSHIFT_DriverUserId` attribute →
+  `client/controllers/VehicleSession` (ON_FOOT/IN_VEHICLE; attaches the
+  controller only while local player is driver; E requests exit via one
+  RemoteEvent). Visual geometry lives under `Visual/` (blockout now,
+  R34-ready); Chassis stays the physics root.
 
 ## Why this structure (Roblox fit)
 

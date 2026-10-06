@@ -1,11 +1,8 @@
 --!strict
 -- NIGHTSHIFT client entry point.
--- Phase 2 wires input + the arcade VehicleController onto the dev rig vehicle.
+-- Phase 2I wires input + the driver session (walk → E-enter → drive → E-exit).
 -- No camera, gameplay, garage, or economy systems yet.
 -- Client never grants currency, ownership, rewards, or progression (see AGENTS.md).
-
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local inputFolder = script.Parent.input
 local controllersFolder = script.Parent.controllers
@@ -15,9 +12,8 @@ local KeyboardInput = require(inputFolder.KeyboardInput)
 local TouchInput = require(inputFolder.TouchInput)
 local GamepadInput = require(inputFolder.GamepadInput)
 local InputDebug = require(inputFolder.InputDebug)
-local VehicleController = require(controllersFolder.VehicleController)
-local ChassisConfig = require(ReplicatedStorage.Shared.config.ChassisConfig)
-local VehicleContract = require(ReplicatedStorage.Shared.vehicle.VehicleContract)
+local VehicleSession = require(controllersFolder.VehicleSession)
+local ChassisConfig = require(game:GetService("ReplicatedStorage").Shared.config.ChassisConfig)
 
 -- TEMPORARY Phase 1+2: normalized-input readout until a debug UI exists.
 local DEBUG_INPUT = true
@@ -30,45 +26,9 @@ local DEBUG_PHYSICS = true
 -- "FORCE_ONLY" (VectorForce alone). "WITH_YAW" adds AngularVelocity; "FULL" is
 -- the intended Phase-2 stack. The NIGHTSHIFT_PhysicsMode model attribute, when
 -- set in Studio, overrides this live without re-syncing.
-local PHYSICS_ISOLATION = "FORCE_ONLY"
+local PHYSICS_ISOLATION = "FULL" -- "FORCE_ONLY" | "WITH_YAW" | "FULL"
 
 local ClientMain = {}
-
--- Event-driven vehicle readiness (no sleeps, no timeouts): returns once the
--- Model exists locally AND the replication attribute is true AND the named
--- root part exists AND structural validation passes — regardless of whether
--- the attribute or the root arrives first. Spurious wakeups just re-check.
-function ClientMain.waitForVehicleReady(vehicle: Instance): ()
-	local signal = Instance.new("BindableEvent")
-	local attrConn: RBXScriptConnection? = nil
-	local childConn: RBXScriptConnection? = nil
-
-	local function poke(): ()
-		signal:Fire()
-	end
-	attrConn = vehicle:GetAttributeChangedSignal(VehicleContract.READY_ATTRIBUTE):Connect(poke)
-	childConn = vehicle.ChildAdded:Connect(poke)
-
-	while true do
-		if vehicle:GetAttribute(VehicleContract.READY_ATTRIBUTE) == true then
-			if vehicle:FindFirstChild(VehicleContract.ROOT_PART_NAME) ~= nil then
-				local complete, _ = VehicleContract.isComplete(vehicle)
-				if complete then
-					break
-				end
-			end
-		end
-		signal.Event:Wait()
-	end
-
-	if attrConn ~= nil then
-		attrConn:Disconnect()
-	end
-	if childConn ~= nil then
-		childConn:Disconnect()
-	end
-	signal:Destroy()
-end
 
 function ClientMain.start(): ()
 	local input = InputController.new()
@@ -82,24 +42,10 @@ function ClientMain.start(): ()
 		InputDebug.start(input)
 	end
 
-	-- DEV-ONLY Phase 2: attach to the rig vehicle (server-built test blockout).
-	-- A freshly replicated Model shell is never mistaken for a ready vehicle.
-	local rig = Workspace:WaitForChild("NIGHTSHIFT_Rig")
-	local vehicle = rig:WaitForChild("TestBlockout")
-	ClientMain.waitForVehicleReady(vehicle)
-	if vehicle:IsA("Model") then
-		local driver = VehicleController.new(input, ChassisConfig.TEST_BLOCKOUT)
-		driver:setDiagnosticsEnabled(DEBUG_PHYSICS)
-		driver:setIsolationMode(PHYSICS_ISOLATION)
-		local ok, message = driver:attach(vehicle)
-		if ok then
-			warn("[NIGHTSHIFT] VehicleController attached (Phase 2).")
-		else
-			warn("[NIGHTSHIFT] VehicleController attach failed: " .. message)
-		end
-	else
-		warn("[NIGHTSHIFT] Rig vehicle missing; input-only mode.")
-	end
+	-- Phase 2I: no auto-attach. The session attaches VehicleController only
+	-- while the server records us as the driver (walk → E-enter → drive).
+	local session = VehicleSession.new(input, ChassisConfig.TEST_BLOCKOUT, PHYSICS_ISOLATION, DEBUG_PHYSICS)
+	session:start()
 end
 
 ClientMain.start()

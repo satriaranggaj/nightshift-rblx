@@ -23,6 +23,15 @@ VehicleContract.ROOT_PART_NAME = "Chassis"
 -- this (event-driven, never a sleep) before resolving the root part.
 VehicleContract.READY_ATTRIBUTE = "NIGHTSHIFT_Ready"
 
+-- Server-written driver occupancy (UserId; 0 = unoccupied). Clients read only.
+VehicleContract.DRIVER_ATTRIBUTE = "NIGHTSHIFT_DriverUserId"
+
+-- Predictable interaction structure (Phase 2I). The seat positions the
+-- Humanoid and identifies the driver; it never implements driving physics.
+VehicleContract.DRIVER_SEAT_NAME = "DriverSeat"
+VehicleContract.DRIVER_ENTRY_NAME = "DriverEntry"
+VehicleContract.DRIVER_EXIT_NAME = "DriverExitPoint"
+
 -- Deterministic structural-completeness check (NOT the replication signal).
 -- Accepts real Instances or mock tables exposing FindFirstChild(string);
 -- rejects everything else with a reason.
@@ -52,6 +61,30 @@ function VehicleContract.resolveRoot(model: any): BasePart?
 		return nil
 	end
 	return (model :: any):FindFirstChild(VehicleContract.ROOT_PART_NAME) :: BasePart
+end
+
+-- Interaction-structure lookup: the driver Seat, or nil. Accepts real
+-- Instances or mock tables; never errors on malformed input.
+function VehicleContract.findSeat(model: any): any
+	if typeof(model) ~= "table" and typeof(model) ~= "Instance" then
+		return nil
+	end
+	local find = (model :: any).FindFirstChild
+	if typeof(find) ~= "function" then
+		return nil
+	end
+	local seat: any = find(model, VehicleContract.DRIVER_SEAT_NAME)
+	if seat == nil then
+		return nil
+	end
+	local isA = (seat :: any).IsA
+	if typeof(isA) ~= "function" then
+		return nil
+	end
+	if isA(seat, "Seat") or isA(seat, "VehicleSeat") then
+		return seat
+	end
+	return nil
 end
 
 return VehicleContract

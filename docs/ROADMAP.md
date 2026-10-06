@@ -33,6 +33,22 @@ Do not jump ahead; one milestone per task.
 - Acceptance: throttle/brake/steer responsive at low speed; no platform branches in physics.
 - Studio: drive on flat baseplate, PC + mobile emulator.
 
+## Phase 2I — Driveable test vehicle / enter-exit (bounded slice, NOT Phase 3)
+
+- Goal: walk → E-enter → drive → E-exit → re-enter loop on the rig vehicle.
+- Scope: Visual container (blockout placeholder; R34-ready), DriverSeat,
+  entry ProximityPrompt, server-validated occupancy (`VehicleService`),
+  driver attribute replication, ownership follows driver, safe exit point,
+  attach-only-while-driver session. No auto-attach on spawn.
+- Excluded: everything Phase 9 defers plus mobile UI, passengers, doors,
+  ownership/persistence/economy, tuning, races.
+- Prereq: Phase 2 physics (FULL mode accepted in Studio before 2I sign-off).
+- Acceptance: tests A–I pass in Studio (spawn on foot … two-player … reset);
+  no duplicate constraints across enter cycles; no stuck throttle.
+- Studio: Play + multi-client; PC keyboard (E). Mobile exit path deferred.
+- Later phases may add passengers/doors/locking/owned-vehicle integration
+  without replacing this foundation.
+
 ## Phase 3 — Mobile steering
 
 - Goal: touch steering feels responsive.
